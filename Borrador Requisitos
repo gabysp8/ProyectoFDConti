@@ -1,2 +1,12 @@
 Requisitos
-Comunicación SPI
+
+La comunicación será en SPI con 9600 baudios y paridad activada, sin handshake definido, en el canal 1 y con 8 bits
+La primera trama determina el número de datos basándose en un diccionario de mensajes
+Se debe incluir un mensaje de seguridad en el diccionario y determinar las acciones
+Los registros de almacenamiento y la configuración no están definidos
+El esclavo y el maestro deben compartir el mismo diccionario y configurar sus registros de manera análoga
+
+Acciones
+Al presionar el botón en la tarjeta 1 una vez en un segundo, se invierte el estado del pin de salida
+Al presionar el botón en la tarjeta 2 veces en un segundo, se genera un PWM de 1Hz
+Al presionar el botón en la tarjeta 3 veces en un segundo, se genera un PWN de 2Hz
