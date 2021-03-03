@@ -10,3 +10,8 @@ Acciones
 Al presionar el botón en la tarjeta 1 una vez en un segundo, se invierte el estado del pin de salida
 Al presionar el botón en la tarjeta 2 veces en un segundo, se genera un PWM de 1Hz
 Al presionar el botón en la tarjeta 3 veces en un segundo, se genera un PWN de 2Hz
+
+Extras
+Se usarán tarjetas TEXAS INSTRUMENTS Launchpad C200
+El pin de salida deberá empezar en 0
+Si el número de pulsaciones no coincide con alguno establecido en acciones, el estado permanecerá igual
