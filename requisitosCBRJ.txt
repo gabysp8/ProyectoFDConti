@@ -1,0 +1,20 @@
+REQUISITO
+-Las tarjetas usadas seran los microcontroladores c2000.
+-El numero de bits es de 8. 
+-La comunicación se realizara atraves del canal 1.
+-la paridad establecida es par.
+-la velocidad de comunicacion es de 9600 baudios. 
+-el protocolo de comunicacion es SPI.
+-La primera trama de datos determinará el número de datos a transmitir.
+,la decodificación se realizará con base en un diccionario de mensajes. Las tramas de datos serán de ocho bits.
+-El diccionario deberá incluir un mensaje de seguridad y debe determinar las acciones a realizar.
+-El esclavo configura sus registros de manera análoga al maestro y deberá tener el mismo diccionario de mensajes para que sepa interpretar.
+-Presionar 1 ves en 1 segundo. invierte el valor del pin de salida.
+-Presionar 2 veces en 1 segundo. genera un PWM de 1Hz.
+-Presiona 3 veces en 1 segundo. Genera un PWM de 2Hz.
+-El led sera de baja intensidad color azul.
+-El boton sera un push botton negro. 
+-El estado del led se mantendra hasta que vuelva a exitir mas pulsaciones.
+-Si el push botton se presiona mas de 3 veces en un segundo,se hara caso omiso y seguira la instruccion que esta en ese momento.
+-Al momento de iniciar ,el led empezara en estado apagado.
+
