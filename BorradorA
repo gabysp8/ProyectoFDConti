@@ -1,0 +1,6 @@
+-Definir I/O
+-Capturar entrada y compararla en un swich
+-En caso de no perteneser quedarse en el estado anterior
+-Mandar infomacion comparada
+-Crear PWM en la tarjeta2 corespondiente
+-Asignar la señal de salida
