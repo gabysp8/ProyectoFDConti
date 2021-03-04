@@ -1,0 +1,21 @@
+Requisitos:
+-comunicacion SPI
+-9600 bd
+-paridad : par
+-esclavo
+-maaestro
+-2 tarjetas TMS320F28377S
+-handshake no definido
+	t1 --> "ok"
+	t2 --> "ok"
+- 8 bits
+- Diccionario de mensajes  [  en esclavo y maestro ]
+- Mensaje de seguridad?
+- esclavo -> Regsitros de manera analoga
+- Pulsador prende led ? en que tarjeta
+- pulsador 1 vez, 1 segundo ->Invierte valor de pin en la tarjeta maestro
+- Pulsador 2 veces, 1 segundo -> PWM de 1 hz (tarjeta 1)
+- Pulsador 3, 1 segundo ->PWM de 2 hz (tarjeta1)
+- Ejecución cicilica
+- La ejecuicon solo se interrumpe si se desconectan las tarjetas
+- Led inicia apagado
