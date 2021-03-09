@@ -1,2 +1,0 @@
-# ProyectoFDConti
-Proyecto Continental
