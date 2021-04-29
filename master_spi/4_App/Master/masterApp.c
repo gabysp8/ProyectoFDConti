@@ -82,6 +82,7 @@ void error(void);
 
 // Estado variable
 Uint16 currentState = mStatePolling;
+
 void main(void)
 {
 
@@ -141,9 +142,9 @@ void main(void)
    //
    // Step 5. User specific code:
    //
-   
+
    // Master's state machine function call
-   masterStateMachine();
+   // masterStateMachine();
 
    sdata = 0x0000;
    for (;;)
@@ -172,6 +173,16 @@ void main(void)
    }
 }
 
+//
+// delay_loop - Loop for a brief delay
+//
+void delay_loop()
+{
+   long i;
+   for (i = 0; i < 1000000; i++)
+   {
+   }
+}
 // Master's State Machine Function
 void masterStateMachine()
 {
@@ -198,17 +209,7 @@ void masterStateMachine()
       default:
          break;
       }
-   }
-}
-
-//
-// delay_loop - Loop for a brief delay
-//
-void delay_loop()
-{
-   long i;
-   for (i = 0; i < 1000000; i++)
-   {
+      delay_loop();
    }
 }
 
