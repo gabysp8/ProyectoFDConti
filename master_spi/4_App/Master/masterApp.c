@@ -27,32 +27,32 @@
 // $Copyright:
 // Copyright (C) 2014-2021 Texas Instruments Incorporated - http://www.ti.com/
 //
-// Redistribution and use in source and binary forms, with or without 
-// modification, are permitted provided that the following conditions 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
 // are met:
-// 
-//   Redistributions of source code must retain the above copyright 
+//
+//   Redistributions of source code must retain the above copyright
 //   notice, this list of conditions and the following disclaimer.
-// 
+//
 //   Redistributions in binary form must reproduce the above copyright
-//   notice, this list of conditions and the following disclaimer in the 
-//   documentation and/or other materials provided with the   
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the
 //   distribution.
-// 
+//
 //   Neither the name of Texas Instruments Incorporated nor the names of
 //   its contributors may be used to endorse or promote products derived
 //   from this software without specific prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
 // LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
 // DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // $
 //###########################################################################
@@ -68,91 +68,136 @@
 // Function Prototypes
 //
 void delay_loop(void);
+void masterStateMachine(void);
 void spi_xmit(Uint16 a);
 void spi_fifo_init(void);
 void spi_init(void);
 void error(void);
 
+//Definicion de los estados
+#define mStatePolling 0x01
+#define mStateRisingEdge 0x02
+#define mStateFallingEdge 0x03
+#define mStateSendCommand 0x04
+
+// Estado variable
+Uint16 currentState = mStatePolling;
 void main(void)
 {
-   Uint16 sdata;  // send data
-   Uint16 rdata;  // received data
 
-//
-// Step 1. Initialize System Control:
-// PLL, WatchDog, enable Peripheral Clocks
-// This example function is found in the F2837xS_SysCtrl.c file.
-//
+   Uint16 sdata; // send data
+   Uint16 rdata; // received data
+
+   //
+   // Step 1. Initialize System Control:
+   // PLL, WatchDog, enable Peripheral Clocks
+   // This example function is found in the F2837xS_SysCtrl.c file.
+   //
    InitSysCtrl();
 
-//
-// Step 2. Initialize GPIO:
-// This example function is found in the F2837xS_Gpio.c file and
-// illustrates how to set the GPIO to it's default state.
-// Setup only the GP I/O only for SPI-A functionality
-// This function is found in F2837xS_Spi.c
-//
+   //
+   // Step 2. Initialize GPIO:
+   // This example function is found in the F2837xS_Gpio.c file and
+   // illustrates how to set the GPIO to it's default state.
+   // Setup only the GP I/O only for SPI-A functionality
+   // This function is found in F2837xS_Spi.c
+   //
    InitSpiaGpio();
 
-//
-// Step 3. Clear all interrupts:
-//
+   //
+   // Step 3. Clear all interrupts:
+   //
    DINT;
 
-//
-// Initialize PIE control registers to their default state.
-// The default state is all PIE __interrupts disabled and flags
-// are cleared.
-// This function is found in the F2837xS_PieCtrl.c file.
-//
+   //
+   // Initialize PIE control registers to their default state.
+   // The default state is all PIE __interrupts disabled and flags
+   // are cleared.
+   // This function is found in the F2837xS_PieCtrl.c file.
+   //
    InitPieCtrl();
 
-//
-// Disable CPU __interrupts and clear all CPU __interrupt flags:
-//
+   //
+   // Disable CPU __interrupts and clear all CPU __interrupt flags:
+   //
    IER = 0x0000;
    IFR = 0x0000;
 
-//
-// Initialize the PIE vector table with pointers to the shell Interrupt
-// Service Routines (ISR).
-// This will populate the entire table, even if the __interrupt
-// is not used in this example.  This is useful for debug purposes.
-// The shell ISR routines are found in F2837xS_DefaultIsr.c.
-// This function is found in F2837xS_PieVect.c.
-//
+   //
+   // Initialize the PIE vector table with pointers to the shell Interrupt
+   // Service Routines (ISR).
+   // This will populate the entire table, even if the __interrupt
+   // is not used in this example.  This is useful for debug purposes.
+   // The shell ISR routines are found in F2837xS_DefaultIsr.c.
+   // This function is found in F2837xS_PieVect.c.
+   //
    InitPieVectTable();
 
-//
-// Step 4. Initialize the Device Peripherals:
-//
-   spi_fifo_init();     // Initialize the SPI FIFO
+   //
+   // Step 4. Initialize the Device Peripherals:
+   //
+   spi_fifo_init(); // Initialize the SPI FIFO
 
-//
-// Step 5. User specific code:
-//
+   //
+   // Step 5. User specific code:
+   //
+   
+   // Master's state machine function call
+   masterStateMachine();
+
    sdata = 0x0000;
-   for(;;)
+   for (;;)
    {
-        //
-        // Transmit data
-        //
-        spi_xmit(sdata);
+      //
+      // Transmit data
+      //
+      spi_xmit(sdata);
 
-        //
-        // Wait until data is received
-        //
-        while(SpiaRegs.SPIFFRX.bit.RXFFST !=1) { }
+      //
+      // Wait until data is received
+      //
+      while (SpiaRegs.SPIFFRX.bit.RXFFST != 1)
+      {
+      }
 
-        //
-        // Check against sent data
-        //
-        rdata = SpiaRegs.SPIRXBUF;
-        if(rdata != sdata)
-        {
-            error();
-        }
-        sdata++;
+      //
+      // Check against sent data
+      //
+      rdata = SpiaRegs.SPIRXBUF;
+      if (rdata != sdata)
+      {
+         error();
+      }
+      sdata++;
+   }
+}
+
+// Master's State Machine Function
+void masterStateMachine()
+{
+   while (true)
+   {
+      switch (currentState)
+      {
+      case mStatePolling /* constant-expression */:
+         /* code */
+         break;
+
+      case mStateRisingEdge /* constant-expression */:
+         /* code */
+         break;
+
+      case mStateFallingEdge /* constant-expression */:
+         /* code */
+         break;
+
+      case mStateSendCommand /* constant-expression */:
+         /* code */
+         break;
+
+      default:
+         break;
+      }
    }
 }
 
@@ -161,17 +206,22 @@ void main(void)
 //
 void delay_loop()
 {
-    long i;
-    for (i = 0; i < 1000000; i++) {}
+   long i;
+   for (i = 0; i < 1000000; i++)
+   {
+   }
 }
+
+// Maquina de estados de Master
 
 //
 // error - Error function that halts the debugger
 //
 void error(void)
 {
-    asm("     ESTOP0");     // Test failed!! Stop!
-    for (;;);
+   asm("     ESTOP0"); // Test failed!! Stop!
+   for (;;)
+      ;
 }
 
 //
@@ -179,7 +229,7 @@ void error(void)
 //
 void spi_xmit(Uint16 a)
 {
-    SpiaRegs.SPITXBUF = a;
+   SpiaRegs.SPITXBUF = a;
 }
 
 //
@@ -187,17 +237,17 @@ void spi_xmit(Uint16 a)
 //
 void spi_fifo_init()
 {
-    //
-    // Initialize SPI FIFO registers
-    //
-    SpiaRegs.SPIFFTX.all = 0xE040;
-    SpiaRegs.SPIFFRX.all = 0x2044;
-    SpiaRegs.SPIFFCT.all = 0x0;
+   //
+   // Initialize SPI FIFO registers
+   //
+   SpiaRegs.SPIFFTX.all = 0xE040;
+   SpiaRegs.SPIFFRX.all = 0x2044;
+   SpiaRegs.SPIFFCT.all = 0x0;
 
-    //
-    // Initialize core SPI registers
-    //
-    InitSpi();
+   //
+   // Initialize core SPI registers
+   //
+   InitSpi();
 }
 
 //
