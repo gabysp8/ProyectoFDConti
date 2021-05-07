@@ -67,21 +67,22 @@
 //
 // Function Prototypes
 //
+void masterGeneralSetup(void); //Master general setup function prototype
 void delay_loop(void);
-void masterStateMachine(void);
+void masterStateMachine(void); //Master states machine function prototype
 void spi_xmit(Uint16 a);
 void spi_fifo_init(void);
 void spi_init(void);
 void error(void);
 
-//Definicion de los estados
-#define mStatePolling 0x01
-#define mStateRisingEdge 0x02
-#define mStateFallingEdge 0x03
-#define mStateSendCommand 0x04
-
-// Estado variable
-Uint16 currentState = mStatePolling;
+//enumeracion de los estados
+enum states
+{
+   mStatePolling = 0x01,
+   mStateRisingEdge,
+   mStateFallingEdge,
+   mStateSendCommand,
+};
 
 void main(void)
 {
@@ -89,6 +90,46 @@ void main(void)
    Uint16 sdata; // send data
    Uint16 rdata; // received data
 
+   // Master general setup function call
+   masterGeneralSetup();
+
+   //
+   // Step 5. User specific code:
+   //
+
+   // Master's state machine function call
+   // masterStateMachine();
+
+   sdata = 0x0000;
+   for (;;)
+   {
+      //
+      // Transmit data
+      //
+      spi_xmit(sdata);
+
+      //
+      // Wait until data is received
+      //
+      while (SpiaRegs.SPIFFRX.bit.RXFFST != 1)
+      {
+      }
+
+      //
+      // Check against sent data
+      //
+      rdata = SpiaRegs.SPIRXBUF;
+      if (rdata != sdata)
+      {
+         error();
+      }
+      sdata++;
+   }
+}
+
+// Master general setup function
+void masterGeneralSetup()
+{
    //
    // Step 1. Initialize System Control:
    // PLL, WatchDog, enable Peripheral Clocks
@@ -138,39 +179,6 @@ void main(void)
    // Step 4. Initialize the Device Peripherals:
    //
    spi_fifo_init(); // Initialize the SPI FIFO
-
-   //
-   // Step 5. User specific code:
-   //
-
-   // Master's state machine function call
-   // masterStateMachine();
-
-   sdata = 0x0000;
-   for (;;)
-   {
-      //
-      // Transmit data
-      //
-      spi_xmit(sdata);
-
-      //
-      // Wait until data is received
-      //
-      while (SpiaRegs.SPIFFRX.bit.RXFFST != 1)
-      {
-      }
-
-      //
-      // Check against sent data
-      //
-      rdata = SpiaRegs.SPIRXBUF;
-      if (rdata != sdata)
-      {
-         error();
-      }
-      sdata++;
-   }
 }
 
 //
@@ -186,24 +194,27 @@ void delay_loop()
 // Master's State Machine Function
 void masterStateMachine()
 {
+   // Uso del enum para evaluar el currentState
+   enum states currentState;
+
    while (true)
    {
       switch (currentState)
       {
       case mStatePolling /* constant-expression */:
-         /* code */
+         currentState = mStatePolling;
          break;
 
       case mStateRisingEdge /* constant-expression */:
-         /* code */
+         currentState = mStateRisingEdge;
          break;
 
       case mStateFallingEdge /* constant-expression */:
-         /* code */
+         currentState = mStateFallingEdge;
          break;
 
       case mStateSendCommand /* constant-expression */:
-         /* code */
+         currentState = mStateSendCommand;
          break;
 
       default:
@@ -212,8 +223,6 @@ void masterStateMachine()
       delay_loop();
    }
 }
-
-// Maquina de estados de Master
 
 //
 // error - Error function that halts the debugger
