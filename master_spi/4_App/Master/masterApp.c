@@ -75,8 +75,8 @@ void spi_fifo_init(void);
 void spi_init(void);
 void error(void);
 
-//enumeracion de los estados
-enum states
+//enumeracion para los estados de master
+enum MasterStates
 {
    mStatePolling = 0x01,
    mStateRisingEdge,
@@ -195,7 +195,7 @@ void delay_loop()
 void masterStateMachine()
 {
    // Uso del enum para evaluar el currentState
-   enum states currentState;
+   enum MasterStates currentState;
 
    while (true)
    {
