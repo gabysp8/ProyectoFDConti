@@ -67,25 +67,66 @@
 //
 // Function Prototypes
 //
+void slaveGeneralSetup(void); //Slave general setup function prototype
 void delay_loop(void);
-void slaveStateMachine(void);
+void slaveStateMachine(void); //Slave states machine function prototype
 void spi_xmit(Uint16 a);
 void spi_fifo_init(void);
 void spi_init(void);
 void error(void);
 
-//Definicion de los estados
-#define sStatePolling 0x01
-#define sStateCheckDictionary 0x02
-
-// Estado variable
-Uint16 currentState = sStatePolling;
+//enumeracion para los estados de slave
+enum SlaveStates
+{
+   sStatePolling = 0x01,
+   sStateCheckDictionary,
+};
 
 void main(void)
 {
    Uint16 sdata; // send data
    Uint16 rdata; // received data
 
+   // slave general setup function call
+   slaveGeneralSetup();
+
+   //
+   // Step 5. User specific code:
+   //
+
+   // Slave's state machine function call
+   // slaveStateMachine();
+
+   sdata = 0x0000;
+   for (;;)
+   {
+      //
+      // Transmit data
+      //
+      spi_xmit(sdata);
+
+      //
+      // Wait until data is received
+      //
+      while (SpiaRegs.SPIFFRX.bit.RXFFST != 1)
+      {
+      }
+
+      //
+      // Check against sent data
+      //
+      rdata = SpiaRegs.SPIRXBUF;
+      if (rdata != sdata)
+      {
+         error();
+      }
+      sdata++;
+   }
+}
+
+// Slave general setup function
+void slaveGeneralSetup()
+{
    //
    // Step 1. Initialize System Control:
    // PLL, WatchDog, enable Peripheral Clocks
@@ -135,39 +176,6 @@ void main(void)
    // Step 4. Initialize the Device Peripherals:
    //
    spi_fifo_init(); // Initialize the SPI FIFO
-
-   //
-   // Step 5. User specific code:
-   //
-
-   // Slave's state machine function call
-   // slaveStateMachine();
-
-   sdata = 0x0000;
-   for (;;)
-   {
-      //
-      // Transmit data
-      //
-      spi_xmit(sdata);
-
-      //
-      // Wait until data is received
-      //
-      while (SpiaRegs.SPIFFRX.bit.RXFFST != 1)
-      {
-      }
-
-      //
-      // Check against sent data
-      //
-      rdata = SpiaRegs.SPIRXBUF;
-      if (rdata != sdata)
-      {
-         error();
-      }
-      sdata++;
-   }
 }
 
 //
@@ -183,16 +191,19 @@ void delay_loop()
 // Slave's State Machine Function
 void slaveStateMachine()
 {
+    // Uso del enum para evaluar el currentState de slave
+    enum SlaveStates currentState;
+
    while (true)
    {
       switch (currentState)
       {
       case sStatePolling /* constant-expression */:
-         /* code */
+          currentState = sStatePolling;
          break;
 
       case sStateCheckDictionary /* constant-expression */:
-         /* code */
+          currentState = sStateCheckDictionary;
          break;
 
       default:
