@@ -1,0 +1,163 @@
+#include "driverlib.h"
+#include "device.h"
+#include "board.h"
+
+# define LOOP_COUNT 10
+
+#define MSG_DATA_LENGTH    0   // "Don't care" for a Receive mailbox
+#define RX_MSG_OBJ_ID      1   // Use mailbox 1
+
+uint16_t rxMsgData[8];
+volatile uint32_t rxMsgCount = 0;
+
+EPWM_SignalParams pwmSignal2 = //2hz
+            {5, 0.5f, 0.5f, true, DEVICE_SYSCLK_FREQ1, SYSCTL_EPWMCLK_DIV_2, EPWM_COUNTER_MODE_UP_DOWN,
+             EPWM_CLOCK_DIVIDER_32,
+            EPWM_HSCLOCK_DIVIDER_14};
+
+EPWM_SignalParams pwmSignal1 = // 1hz
+            {1, 0.5f, 0.5f, true, DEVICE_SYSCLK_FREQ1, SYSCTL_EPWMCLK_DIV_2, EPWM_COUNTER_MODE_UP_DOWN,
+             EPWM_CLOCK_DIVIDER_32,
+            EPWM_HSCLOCK_DIVIDER_14};
+
+EPWM_SignalParams pwmSignal = //0.5hz   //nota___1-2.5
+            {5, 0.5f, 0.5f, true, DEVICE_SYSCLK_FREQ1, SYSCTL_EPWMCLK_DIV_2, EPWM_COUNTER_MODE_UP_DOWN,
+             EPWM_CLOCK_DIVIDER_128,
+            EPWM_HSCLOCK_DIVIDER_14};
+
+
+void main(void)
+{
+    //
+    // Initialize device clock and peripherals
+    //
+    Device_init();
+
+    //
+    // Initialize GPIO
+    //
+    Device_initGPIO();
+    GPIO_setPadConfig(2, GPIO_PIN_TYPE_STD);
+    GPIO_setDirectionMode(2, GPIO_DIR_MODE_OUT);
+        //
+        // Initialize PIE and clear PIE registers. Disables CPU interrupts.
+        //
+        Interrupt_initModule();
+
+        //
+        // Initialize the PIE vector table with pointers to the shell Interrupt
+        // Service Routines (ISR).
+        //
+        Interrupt_initVectorTable();
+
+
+        Board_init();
+
+
+        // Disable sync(Freeze clock to PWM as well)
+        //
+        SysCtl_disablePeripheral(SYSCTL_PERIPH_CLK_TBCLKSYNC);
+
+        //
+        // Configuring ePWM module for desired frequency and duty
+        //
+        EPWM_configureSignal(myEPWM2_BASE, &pwmSignal);
+        EPWM_configureSignal(myEPWM2_BASE, &pwmSignal1);
+        EPWM_configureSignal(myEPWM2_BASE, &pwmSignal2);
+
+	//
+    // Configure GPIO pins for CANTX/CANRX
+	//
+    GPIO_setPinConfig(GPIO_70_CANRXA);
+    GPIO_setPinConfig(GPIO_71_CANTXA);
+
+
+    //
+    // Configure GPIO pin which is toggled upon message reception
+	//
+    GPIO_setPadConfig(70, GPIO_PIN_TYPE_STD);
+    GPIO_setDirectionMode(71, GPIO_DIR_MODE_OUT);
+
+    //
+    // Initialize the CAN controller
+    //
+    CAN_initModule(CANA_BASE);
+
+    //
+    // Set up the CAN bus bit rate to 500kHz for each module
+    // Refer to the Driver Library User Guide for information on how to set
+    // tighter timing control. Additionally, consult the device data sheet
+    // for more information about the CAN module clocking.
+    //
+    CAN_setBitRate(CANA_BASE, DEVICE_SYSCLK_FREQ, 500000, 16);
+
+    //
+    // Initialize the receive message object used for receiving CAN messages.
+    // Message Object Parameters:
+    //      CAN Module: A
+    //      Message Object ID Number: 1
+    //      Message Identifier: 0x1
+    //      Message Frame: Standard
+    //      Message Type: Receive
+    //      Message ID Mask: 0x0
+    //      Message Object Flags: None
+    //      Message Data Length: "Don't care" for a Receive mailbox
+	//
+    CAN_setupMessageObject(CANA_BASE, RX_MSG_OBJ_ID, 0x1,
+                           CAN_MSG_FRAME_STD, CAN_MSG_OBJ_TYPE_RX, 0,
+                           CAN_MSG_OBJ_NO_FLAGS, MSG_DATA_LENGTH);
+
+    //
+    // Start CAN module A operations
+    //
+    CAN_startModule(CANA_BASE);
+
+    //
+    // Start reception - Just wait for data from another node
+	//
+    while(1)
+	{
+	    //
+	    // Poll RxOk bit in CAN_ES register to check completion of Reception
+	    //
+		if(((HWREGH(CANA_BASE + CAN_O_ES) & CAN_ES_RXOK)) == CAN_ES_RXOK) //CAN_O_ES (4) // Error and Status Register //CAN_ES_RXOK (16) // Reception status
+		{
+			//
+			// Get the received message
+			//
+		    //CAN_IF1DATA Register    0x00000000
+
+			CAN_readMessage(CANA_BASE, RX_MSG_OBJ_ID, rxMsgData);
+			GPIO_togglePin(65U);
+			rxMsgCount++;
+		}
+
+		if(rxMsgData[0] == 0x0A){
+		    EPWM_enablePhaseShiftLoad(myEPWM2_BASE);
+		 }else
+		     if(rxMsgData[0] == 0x0B){
+		         EPWM_enablePhaseShiftLoad(myEPWM3_BASE);
+		     }else
+		         if(rxMsgData[0] == 0x0C){
+		                     EPWM_enablePhaseShiftLoad(myEPWM6_BASE);
+		                  }
+
+		  //
+		    // Enable sync and clock to PWM
+		    //
+	    SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_TBCLKSYNC);
+
+	    //
+	    // Enable interrupts required for this example
+	    //
+	    Interrupt_enable(INT_EPWM1);
+
+	    //
+	    // Enable global Interrupts and higher priority real-time debug events:
+	    //
+	    EINT;  // Enable Global interrupt INTM
+	    ERTM;  // Enable Global realtime interrupt DBGM
+
+
+	}
+}
