@@ -1,0 +1,187 @@
+//###########################################################################
+//
+// FILE:   epwm_ex11_configure_signal.c
+//
+// TITLE:  Configure desired EPWM frequency & duty
+//
+//! \addtogroup driver_example_list
+//! <h1> EPWM Configure Signal </h1>
+//!
+//! This example configures ePWM1, ePWM2, ePWM3 to produce signal of desired
+//! frequency and duty. It also configures phase between the configured
+//! modules.
+//!
+//! Signal of 10kHz with duty of 0.5 is configured on ePWMxA & ePWMxB
+//! with ePWMxB inverted. Also, phase of 120 degree is configured between
+//! ePWM1 to ePWM3 signals.
+//!
+//! During the test, monitor ePWM1, ePWM2, and/or ePWM3 outputs
+//! on an oscilloscope.
+//!
+//! - ePWM1A is on GPIO0
+//! - ePWM1B is on GPIO1
+//! - ePWM2A is on GPIO2
+//! - ePWM2B is on GPIO3
+//! - ePWM3A is on GPIO4
+//! - ePWM3B is on GPIO5
+//!
+//
+//###########################################################################
+// $TI Release: F2837xS Support Library v3.12.00.00 $
+// $Release Date: Fri Feb 12 19:06:50 IST 2021 $
+// $Copyright:
+// Copyright (C) 2014-2021 Texas Instruments Incorporated - http://www.ti.com/
+//
+// Redistribution and use in source and binary forms, with or without 
+// modification, are permitted provided that the following conditions 
+// are met:
+// 
+//   Redistributions of source code must retain the above copyright 
+//   notice, this list of conditions and the following disclaimer.
+// 
+//   Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the 
+//   documentation and/or other materials provided with the   
+//   distribution.
+// 
+//   Neither the name of Texas Instruments Incorporated nor the names of
+//   its contributors may be used to endorse or promote products derived
+//   from this software without specific prior written permission.
+// 
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// $
+//###########################################################################
+
+//
+// Included Files
+//
+#include "driverlib.h"
+#include "device.h"
+#include "board.h"
+//#define DEVICE_SYSCLK_FREQ          ((DEVICE_OSCSRC_FREQ * 20 * 1) / 2) //200MHz SYSCLK //20MHz//10M
+////#define myEPWM1_BASE EPWM2_BASE
+//#define myEPWM6_BASE EPWM4_BASE
+
+// Globals
+//
+
+//typedef struct
+//{
+//    float32_t              freqInHz;    //!< Desired Signal Frequency(in Hz)
+    //float32_t              dutyValA;    //!< Desired ePWMxA Signal Duty
+    //float32_t              dutyValB;    //!< Desired ePWMxB Signal Duty
+    //bool                   invertSignalB; //!< Invert ePWMxB Signal if true
+    //float32_t              sysClkInHz;  //!< SYSCLK Frequency(in Hz)
+    //SysCtl_EPWMCLKDivider  epwmClkDiv;  //!< EPWM Clock Divider
+    //EPWM_TimeBaseCountMode tbCtrMode;   //!< Time Base Counter Mode
+    //EPWM_ClockDivider      tbClkDiv;    //!< Time Base Counter Clock Divider
+    //EPWM_HSClockDivider    tbHSClkDiv;  //!< Time Base Counter HS Clock Divider
+//} EPWM_SignalParams;
+//1,2,6,7 -> 1,2,6,7 //10
+EPWM_SignalParams pwmSignal = //2hz
+            {5, 0.5f, 0.5f, true, DEVICE_SYSCLK_FREQ1, SYSCTL_EPWMCLK_DIV_2, EPWM_COUNTER_MODE_UP_DOWN,
+             EPWM_CLOCK_DIVIDER_32,
+            EPWM_HSCLOCK_DIVIDER_14};
+//EPWM_COUNTER_MODE_DOWN,
+//EPWM_COUNTER_MODE_UP_DOWN,
+//EPWM_CLOCK_DIVIDER_64
+//EPWM_COUNTER_MODE_STOP_FREEZE,
+
+
+//EPWM_SignalParams pwmSignal = //0.5hz   //nota___1-2.5
+  //          {5, 0.5f, 0.5f, true, DEVICE_SYSCLK_FREQ1, SYSCTL_EPWMCLK_DIV_2, EPWM_COUNTER_MODE_UP_DOWN,
+    //         EPWM_CLOCK_DIVIDER_128,
+      //      EPWM_HSCLOCK_DIVIDER_14};
+
+
+//EPWM_SignalParams pwmSignal = // 1hz
+  //          {1, 0.5f, 0.5f, true, DEVICE_SYSCLK_FREQ1, SYSCTL_EPWMCLK_DIV_2, EPWM_COUNTER_MODE_UP_DOWN,
+    //         EPWM_CLOCK_DIVIDER_32,
+      //      EPWM_HSCLOCK_DIVIDER_14};
+///1hz//128,DEVICE_SYSCLK_FREQ
+///1hz//128,DEVICE_SYSCLK_FREQ1//10
+// Main
+//
+void main(void)
+{
+    //
+    // Initialize device clock and peripherals
+    //
+    Device_init();
+
+    //
+    // Disable pin locks and enable internal pull-ups.
+    //
+    Device_initGPIO();
+
+    //
+    // Initialize PIE and clear PIE registers. Disables CPU interrupts.
+    //
+    Interrupt_initModule();
+
+    //
+    // Initialize the PIE vector table with pointers to the shell Interrupt
+    // Service Routines (ISR).
+    //
+    Interrupt_initVectorTable();
+
+    //
+    // For this case just init GPIO pins for ePWM1, ePWM2, ePWM3
+    //
+    Board_init();
+
+    // Disable sync(Freeze clock to PWM as well)
+    //
+    SysCtl_disablePeripheral(SYSCTL_PERIPH_CLK_TBCLKSYNC);
+
+        //
+    //
+    // Configuring ePWM module for desired frequency and duty
+    //
+    EPWM_configureSignal(myEPWM2_BASE, &pwmSignal);
+    EPWM_configureSignal(myEPWM3_BASE, &pwmSignal);
+    EPWM_configureSignal(myEPWM6_BASE, &pwmSignal);
+
+    //
+    // Configure phase between PWM1, PWM2 & PWM3.
+    // PWM1 is configured as master and ePWM2 & 3
+    // are configured as slaves.
+    //
+    EPWM_disablePhaseShiftLoad(myEPWM2_BASE);
+    EPWM_enablePhaseShiftLoad(myEPWM3_BASE);
+    EPWM_enablePhaseShiftLoad(myEPWM6_BASE);
+
+    //
+    // Enable sync and clock to PWM
+    //
+    SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_TBCLKSYNC);
+
+    //
+    // Enable interrupts required for this example
+    //
+    Interrupt_enable(INT_EPWM1);
+
+    //
+    // Enable global Interrupts and higher priority real-time debug events:
+    //
+    EINT;  // Enable Global interrupt INTM
+    ERTM;  // Enable Global realtime interrupt DBGM
+
+    //
+    // IDLE loop. Just sit and loop forever (optional):
+    //
+    for(;;)
+    {
+        asm ("  NOP");
+    }
+}
