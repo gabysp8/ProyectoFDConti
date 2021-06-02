@@ -8,67 +8,11 @@
 //! <h1> CAN simple example that illustrates data reception </h1>
 //!
 //! This example initializes CAN module A for Reception. When a frame with a
-//! STD-MSGID of 0x1 is received, the data will be copied in mailbox 1.
-//! If a message of any other MSGID is received, an ACK will be provided.
-//! GPIO65 will be toggled in both cases. Completion of reception
-//! is determined by polling. No interrupts are used.
-//! Note: RxOK bit is set even when the MSGID does not match.
-//!
-//! \b Hardware \b Required \n
-//!  - An external CAN node that transmits to CAN-A on the C2000 MCU
-//!
-//! \b Watch \b Variables \n
-//!  - rxMsgCount - A counter for the number of messages received
-//!  - rxMsgData - An array with the data that was received
-//!
-//
-//#############################################################################
-// $TI Release: F2837xS Support Library v3.12.00.00 $
-// $Release Date: Fri Feb 12 19:06:50 IST 2021 $
-// $Copyright:
-// Copyright (C) 2014-2021 Texas Instruments Incorporated - http://www.ti.com/
-//
-// Redistribution and use in source and binary forms, with or without 
-// modification, are permitted provided that the following conditions 
-// are met:
-// 
-//   Redistributions of source code must retain the above copyright 
-//   notice, this list of conditions and the following disclaimer.
-// 
-//   Redistributions in binary form must reproduce the above copyright
-//   notice, this list of conditions and the following disclaimer in the 
-//   documentation and/or other materials provided with the   
-//   distribution.
-// 
-//   Neither the name of Texas Instruments Incorporated nor the names of
-//   its contributors may be used to endorse or promote products derived
-//   from this software without specific prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// $
-//#############################################################################
-
-//
-// Included Files
-//
 #include "driverlib.h"
 #include "device.h"
 
-
 # define LOOP_COUNT 10
 
-
-//
 // Defines
 //
 #define MSG_DATA_LENGTH    0   // "Don't care" for a Receive mailbox
@@ -78,6 +22,7 @@
 // Globals
 //
 uint16_t rxMsgData[8];
+uint16_t Data;
 volatile uint32_t rxMsgCount = 0;
 
 //
@@ -175,7 +120,8 @@ void main(void)
 			rxMsgCount++;
 		}
 
-		if(rxMsgData[0] == 0x0A){
+		Data = rxMsgData[0];
+		if(Data == 0x0A){
 
 		    for(;;)
 		        {
@@ -187,7 +133,7 @@ void main(void)
 		            //
 		            // Delay for a bit.
 		            //
-		            DEVICE_DELAY_US(500000);
+		            DEVICE_DELAY_US(250000);
 
 		            //
 		            // Turn off LED
@@ -197,14 +143,60 @@ void main(void)
 		            //
 		            // Delay for a bit.
 		            //
-		            DEVICE_DELAY_US(500000);
+		            DEVICE_DELAY_US(250000);
 		        }
-		}
+		} else
+		    if(Data == 0x0B){
+
+		                for(;;)
+		                    {
+		                        //
+		                        // Turn on LED
+		                        //
+		                        GPIO_writePin(2, 0);
+
+		                        //
+		                        // Delay for a bit.
+		                        //
+		                        DEVICE_DELAY_US(500000);
+
+		                        //
+		                        // Turn off LED
+		                        //
+		                        GPIO_writePin(2, 1);
+
+		                        //
+		                        // Delay for a bit.
+		                        //
+		                        DEVICE_DELAY_US(500000);
+		                    }
+		            } else
+		                if(Data == 0x0C){
+
+		                            for(;;)
+		                                {
+		                                    //
+		                                    // Turn on LED
+		                                    //
+		                                    GPIO_writePin(2, 0);
+
+		                                    //
+		                                    // Delay for a bit.
+		                                    //
+		                                    DEVICE_DELAY_US(1000000);
+
+		                                    //
+		                                    // Turn off LED
+		                                    //
+		                                    GPIO_writePin(2, 1);
+
+		                                    //
+		                                    // Delay for a bit.
+		                                    //
+		                                    DEVICE_DELAY_US(1000000);
+		                                }
+		                        }
 
 
 	}
 }
-
-//
-// End of File
-//
