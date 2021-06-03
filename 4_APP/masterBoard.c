@@ -18,7 +18,9 @@ uint16_t pulseCount = 0;
 //
 interrupt void mStateRisingEdge(void);
 interrupt void mStateFallingEdge(void);
-void mStateSendCommand(void);
+__interrupt void cpuTimer0ISR(void);
+__interrupt void cpuTimer1ISR(void);
+
 
 
 //
@@ -30,8 +32,9 @@ bool pulseError=0;
 //
 // Function Prototypes
 //
-__interrupt void cpuTimer0ISR(void);
-__interrupt void cpuTimer1ISR(void);
+void masterGeneralSetup(void);
+void mStateSendCommand(void);
+
 
 
 
@@ -40,87 +43,11 @@ __interrupt void cpuTimer1ISR(void);
 //
 void main(void)
 {
-    //
-    // Initializes system control, device clock, and peripherals
-    //
-    Device_init();
-
-    //
-    // Initializes PIE and clear PIE registers. Disables CPU interrupts.
-    // and clear all CPU interrupt flags.
-    //
-    Interrupt_initModule();
-
-    //
-    // Initialize the PIE vector table with pointers to the shell interrupt
-    // Service Routines (ISR).
-    //
-    Interrupt_initVectorTable();
-
-    //
-    // Board Initialization
-    //
-    Board_init();
-
-    // Interrupts that are used in this example are re-mapped to
-    // ISR functions found within this file.
-    //
-    Interrupt_register(INT_XINT1, &mStateRisingEdge);
-    Interrupt_register(INT_XINT2, &mStateFallingEdge);
-    risingEdgeCount = 0; // Count XINT1 interrupts
-    fallingEdgeCount = 0; // Count XINT2 interrupts
-    // Enable XINT1 and XINT2 in the PIE: Group 1 interrupt 4 & 5
-    // Enable INT1 which is connected to WAKEINT:
-    //
-    Interrupt_enable(INT_XINT1);
-    Interrupt_enable(INT_XINT2);
-
-
-    //
-      // GPIO0 and GPIO1 are inputs
-      //
-      GPIO_setDirectionMode(11,GPIO_DIR_MODE_IN);          // input
-      // XINT1 Synch to SYSCLKOUT only
-      GPIO_setQualificationMode(11, GPIO_QUAL_6SAMPLE);
-      GPIO_setDirectionMode(10,GPIO_DIR_MODE_IN);          // input
-      // XINT2 Qual using 6 samples
-      GPIO_setQualificationMode(10, GPIO_QUAL_6SAMPLE);
-      // Set qualification period for GPIO0 to GPIO7
-      // Each sampling window is 510*SYSCLKOUT
-      GPIO_setQualificationPeriod(3,510);
-
-      //
-      // GPIO0 is XINT1, GPIO1 is XINT2
-      //
-      GPIO_setInterruptPin(11,GPIO_INT_XINT1);
-      GPIO_setInterruptPin(10,GPIO_INT_XINT2);
-
-      //
-      // Configure XINT1
-      //
-      // Falling edge interrupt
-      GPIO_setInterruptType(GPIO_INT_XINT1, GPIO_INT_TYPE_FALLING_EDGE);
-      // Rising edge interrupt
-      GPIO_setInterruptType(GPIO_INT_XINT2, GPIO_INT_TYPE_RISING_EDGE);
-
-      //
-      // Enable XINT1 and XINT2
-      //
-      GPIO_enableInterrupt(GPIO_INT_XINT1);         // Enable XINT1
-      GPIO_enableInterrupt(GPIO_INT_XINT2);         // Enable XINT2
-
-
-       // ISRs for each CPU Timer interrupt
-       //
-      Interrupt_register(INT_TIMER0, &cpuTimer0ISR);
-      Interrupt_register(INT_TIMER1, &cpuTimer1ISR);
-
-      initCPUTimers();
-      Device_initGPIO();
-      MSG_CAN();
+    masterGeneralSetup();
 
     for(;;)
     {
+
         baseTime = getTime(baseTimer);
 
         if(baseTime == 1000){
@@ -135,6 +62,58 @@ void main(void)
         }
     }
 }
+
+void masterGeneralSetup (void){
+    Device_init(); // Initializes system control, device clock, and peripherals
+
+    Interrupt_initModule();     // Initializes PIE and clear PIE registers. Disables CPU interrupts.
+                                // and clear all CPU interrupt flags.
+
+    Interrupt_initVectorTable();     // Initialize the PIE vector table with pointers to the shell interrupt
+                                    // Service Routines (ISR).
+
+    Board_init();     // Board Initialization
+
+
+    Interrupt_register(INT_XINT1, &mStateRisingEdge);// Interrupts that are used in this example are re-mapped to
+    Interrupt_register(INT_XINT2, &mStateFallingEdge); // ISR functions found within this file.
+
+
+    Interrupt_enable(INT_XINT1);    // Enable XINT1 and XINT2 in the PIE: Group 1 interrupt 4 & 5
+    Interrupt_enable(INT_XINT2);// Enable INT1 which is connected to WAKEINT:
+
+
+      GPIO_setDirectionMode(11,GPIO_DIR_MODE_IN);          // input
+      // XINT1 Qual using 6 samples
+      GPIO_setQualificationMode(11, GPIO_QUAL_6SAMPLE);
+      GPIO_setDirectionMode(10,GPIO_DIR_MODE_IN);          // input
+      // XINT2 Qual using 6 samples
+      GPIO_setQualificationMode(10, GPIO_QUAL_6SAMPLE);
+      // Set qualification period for GPIO0 to GPIO7
+      // Each sampling window is 510*SYSCLKOUT
+      GPIO_setQualificationPeriod(3,510);
+
+      GPIO_setInterruptPin(11,GPIO_INT_XINT1);// GPIO0 is XINT1, GPIO1 is XINT2
+      GPIO_setInterruptPin(10,GPIO_INT_XINT2);
+
+      GPIO_setInterruptType(GPIO_INT_XINT1, GPIO_INT_TYPE_FALLING_EDGE);  // Falling edge interrupt
+      GPIO_setInterruptType(GPIO_INT_XINT2, GPIO_INT_TYPE_RISING_EDGE); // Rising edge interrupt
+
+      GPIO_enableInterrupt(GPIO_INT_XINT1);         // Enable XINT1
+      GPIO_enableInterrupt(GPIO_INT_XINT2);         // Enable XINT2
+
+
+
+      Interrupt_register(INT_TIMER0, &cpuTimer0ISR); // ISRs for each CPU Timer interrupt
+      Interrupt_register(INT_TIMER1, &cpuTimer1ISR);
+
+      initCPUTimers();
+      Device_initGPIO();
+      MSG_CAN();
+
+}
+
+
 
 //
 // mStateRisingEdge - External Interrupt 1 ISR
