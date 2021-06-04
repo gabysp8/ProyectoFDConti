@@ -62,11 +62,6 @@ void main(void)
         Data = rxMsgData[0];
         cValue = CheckDictionary(Dictionary, Data);
 
-        if (rxMsgData[0 != ])
-        {
-            /* code */
-        }
-
         if (cValue != -1)
         {
             setPWM(cValue);
